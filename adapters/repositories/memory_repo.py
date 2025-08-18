@@ -1,10 +1,9 @@
 from typing import Dict, Iterable, Optional
 
 from domain.models import Task, TaskId
-from usecases.ports import TaskRepository
 
 
-class InMemoryTaskRepo(TaskRepository):
+class InMemoryTaskRepo:
 
     def __init__(self):
         self._db: Dict[str, Task] = {}

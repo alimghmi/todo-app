@@ -1,7 +1,7 @@
 from usecases.ports import Presenter
 
 
-class HumanPresenter(Presenter):
+class HumanPresenter:
 
     def success(self, data):
         msg = ""
