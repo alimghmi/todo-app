@@ -13,10 +13,8 @@ class HumanPresenter(Presenter):
         elif isinstance(data, dict):
             for k, v in data.items():
                 msg += f"\t{k}= {v}\n"
-                
+
         return msg
 
     def fail(self, message, *, status=400):
-        return (
-            f"{message} [{status} status code]"
-        )
+        return f"{message} [{status} status code]"
