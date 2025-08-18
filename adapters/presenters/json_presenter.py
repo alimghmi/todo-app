@@ -1,7 +1,7 @@
 from usecases.ports import Presenter
 
 
-class JsonPresenter(Presenter):
+class JSONPresenter(Presenter):
 
     def success(self, data):
         return {"ok": True, "data": data}
