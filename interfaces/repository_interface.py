@@ -1,4 +1,3 @@
-# interfaces/repository_interface.py
 from abc import ABC, abstractmethod
 from typing import Iterable, Optional
 
