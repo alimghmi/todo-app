@@ -122,3 +122,22 @@ Everything flows inward. Core doesn't know who is calling it.
 -   Easier to test.
 -   Freedom to swap tech (databases, frameworks, UIs).
 -   Code stays readable and doesn't tangle up.
+
+
+------------------------------------------------------------------------
+
+## A Few Reminders from Uncle Bob
+
+> “The essence of architecture is the separation of concerns.”
+
+> “The database is a detail. The web is a detail. Frameworks are details. Keep them on the outside.”
+
+> “The only way to go fast is to go well.”
+
+> “Nothing in an architecture should depend on volatile details.”
+
+> “We want stable business rules in the center, and volatile details at the edges.”
+
+> “Frameworks are tools, not ways of life.”
+
+> “You don’t design architecture for today’s needs. You design it so tomorrow’s changes don’t break you.”
