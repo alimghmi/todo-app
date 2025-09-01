@@ -1,50 +1,73 @@
-import json
+from entities.models import TaskId
+from repositories.sqlite_repo import SQLiteTaskRepo
+from usecases.task_services import TaskNotFoundError, TaskService, ValidationError
 
-from adapters.presenters.human_presenter import HumanPresenter
-from adapters.repositories.memory_repo import InMemoryTaskRepo
-from usecases.add_task import AddTask
-from usecases.list_tasks import ListTasks
-from usecases.ports import AddTaskRequest
-from usecases.toggle_task import ToggleTask
-
-repo = InMemoryTaskRepo()
-presenter = HumanPresenter()
-
-
-def parse(input_text):
-    tokens = input_text.strip().split(" ")
-    cmd = tokens[0].lower()
-    if cmd not in ["add", "list", "toggle"]:
-        raise ValueError("Command not valid.")
-
-    tokens.pop(0)
-    arg = " ".join(tokens)
-    return cmd, arg
+HELP = """commands:
+  add <title>
+  list
+  done <id>
+  reopen <id>
+  rename <id> <new_title>
+  help
+  quit
+"""
 
 
-def main():
-    print(
-        "\nTODO APP\n\nCommand lists:\n\t- add task_title\n\t- list\n\t- toggle task_id\n"
-    )
-    try:
-        while True:
-            cmd_raw = input("> ")
-            try:
-                cmd, arg = parse(cmd_raw)
-                if cmd == "add":
-                    res = AddTask(repo, presenter).execute(AddTaskRequest(title=arg))
-                elif cmd == "list":
-                    res = ListTasks(repo, presenter).execute()
+def run():
+    repo = SQLiteTaskRepo()
+    svc = TaskService(repo)
+    print("TODO REPL (clean architecture)\n" + HELP)
+    while True:
+        try:
+            line = input("> ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nbye!")
+            return
+        if not line:
+            continue
+        if line in {"quit", "exit"}:
+            print("bye!")
+            return
+        if line == "help":
+            print(HELP)
+            continue
+
+        try:
+            if line.startswith("add "):
+                title = line[4:].strip()
+                t = svc.create_task(title)
+                print(f"added: {t.id.value} | {t.title}")
+
+            elif line == "list":
+                for t in svc.list_tasks():
+                    print(f"{t.id.value} | {'✔' if t.done else '·'} | {t.title}")
+
+            elif line.startswith("done "):
+                _id = line.split(maxsplit=1)[1]
+                t = svc.mark_done(TaskId(_id))
+                print(f"done: {t.id.value} | {t.title}")
+
+            elif line.startswith("reopen "):
+                _id = line.split(maxsplit=1)[1]
+                t = svc.reopen(TaskId(_id))
+                print(f"reopened: {t.id.value} | {t.title}")
+
+            elif line.startswith("rename "):
+                parts = line.split(maxsplit=2)
+                if len(parts) < 3:
+                    print("usage: rename <id> <new_title>")
                 else:
-                    res = ToggleTask(repo, presenter).execute(arg)
+                    _id, new_title = parts[1], parts[2]
+                    t = svc.rename(TaskId(_id), new_title)
+                    print(f"renamed: {t.id.value} | {t.title}")
 
-                print(res)
-            except ValueError:
-                print(">> Invalid command.")
-                continue
-    except KeyboardInterrupt:
-        return
+            else:
+                print("unknown command. type 'help'")
+        except ValidationError as e:
+            print(f"validation error: {e}")
+        except TaskNotFoundError as e:
+            print(f"not found: {e}")
 
 
 if __name__ == "__main__":
-    main()
+    run()
