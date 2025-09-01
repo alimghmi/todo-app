@@ -1,39 +1,55 @@
+# presentations/cli.py
 import argparse
-import json
 
-from adapters.presenters.json_presenter import JSONPresenter
-from adapters.repositories.memory_repo import InMemoryTaskRepo
-from usecases.add_task import AddTask
-from usecases.list_tasks import ListTasks
-from usecases.ports import AddTaskRequest
-from usecases.toggle_task import ToggleTask
-
-repo = InMemoryTaskRepo()
-presenter = JSONPresenter()
+from entities.models import TaskId
+from repositories.memory_repo import InMemoryTaskRepo
+from usecases.task_services import TaskNotFoundError, TaskService, ValidationError
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="todo")
-    subs = parser.add_subparsers(dest="cmd", required=True)
+    parser = argparse.ArgumentParser(prog="todo", description="Clean Architecture TODO")
+    sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_add = subs.add_parser("add", help="Add a task")
-    p_add.add_argument("title", type=str)
+    p_add = sub.add_parser("add", help="add a new task")
+    p_add.add_argument("title", help="task title")
 
-    subs.add_parser("list", help="List tasks")
+    sub.add_parser("list", help="list tasks")
 
-    p_toggle = subs.add_parser("toggle", help="Toggle done/undone")
-    p_toggle.add_argument("id", type=str)
+    p_done = sub.add_parser("done", help="mark task done")
+    p_done.add_argument("id")
+
+    p_reopen = sub.add_parser("reopen", help="reopen a done task")
+    p_reopen.add_argument("id")
+
+    p_rename = sub.add_parser("rename", help="rename a task")
+    p_rename.add_argument("id")
+    p_rename.add_argument("title")
 
     args = parser.parse_args()
 
-    if args.cmd == "add":
-        res = AddTask(repo, presenter).execute(AddTaskRequest(title=args.title))
-    elif args.cmd == "list":
-        res = ListTasks(repo, presenter).execute()
-    else:
-        res = ToggleTask(repo, presenter).execute(args.id)
+    repo = InMemoryTaskRepo()
+    service = TaskService(repo)
 
-    print(json.dumps(res, indent=2))
+    try:
+        if args.cmd == "add":
+            t = service.create_task(args.title)
+            print(f"added {t.id.value} | {t.title} | done={t.done}")
+        elif args.cmd == "list":
+            for t in service.list_tasks():
+                print(f"{t.id.value} | {'✔' if t.done else '·'} | {t.title}")
+        elif args.cmd == "done":
+            t = service.mark_done(TaskId(args.id))
+            print(f"done {t.id.value} | {t.title}")
+        elif args.cmd == "reopen":
+            t = service.reopen(TaskId(args.id))
+            print(f"reopened {t.id.value} | {t.title}")
+        elif args.cmd == "rename":
+            t = service.rename(TaskId(args.id), args.title)
+            print(f"renamed {t.id.value} | {t.title}")
+    except ValidationError as e:
+        print(f"validation error: {e}")
+    except TaskNotFoundError as e:
+        print(f"not found: {e}")
 
 
 if __name__ == "__main__":
